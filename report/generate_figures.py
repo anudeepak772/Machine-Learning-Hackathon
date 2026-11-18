@@ -182,10 +182,12 @@ def plot_bayesian_optimization():
     print(f"Generated {out_path}")
 
 # -------------------------------------------------------------
-# 5. HMM vs Classifier Per-Trip Comparison
+# 5. HMM vs Classifier Per-Trip Comparison (Evaluator Test)
 # -------------------------------------------------------------
 def plot_hmm_comparison():
-    csv_path = os.path.join(RESULTS_DIR, "hmm_vs_classifier_student_test.csv")
+    csv_path = os.path.join(RESULTS_DIR, "hmm_vs_classifier_evaluator_test.csv")
+    if not os.path.exists(csv_path):
+        csv_path = os.path.join(RESULTS_DIR, "hmm_vs_classifier_student_test.csv")
     df = pd.read_csv(csv_path)
     
     trips = [f"T{str(t).zfill(8)[-2:]}" for t in df["trip_id"]]
@@ -204,7 +206,7 @@ def plot_hmm_comparison():
     bars_h1 = ax1.bar(x + width/2, hmm_acc, width, label='Classifier + Viterbi HMM', color='#1D4ED8', edgecolor='black', linewidth=0.5)
     ax1.axhline(90, color='#DC2626', linestyle='--', linewidth=1.2, label='Target Threshold (90%)')
     ax1.set_ylabel('Top-1 Accuracy (%)', fontweight='bold')
-    ax1.set_title('Pointwise Top-1 Road Matching Accuracy: Classifier vs Viterbi HMM', fontweight='bold')
+    ax1.set_title('Evaluator-Testing Set: Pointwise Top-1 Road Matching Accuracy (Classifier vs Viterbi HMM)', fontweight='bold')
     ax1.set_ylim(80, 102)
     ax1.legend(loc='lower right', frameon=True)
     ax1.grid(axis='y', linestyle='--', alpha=0.6)
@@ -217,11 +219,11 @@ def plot_hmm_comparison():
     ax2.bar(x - width/2, clf_cont, width, label='Classifier Only Continuity', color='#A7F3D0', edgecolor='black', linewidth=0.5)
     bars_h2 = ax2.bar(x + width/2, hmm_cont, width, label='Classifier + Viterbi HMM Continuity', color='#047857', edgecolor='black', linewidth=0.5)
     ax2.set_ylabel('Route Continuity (%)', fontweight='bold')
-    ax2.set_xlabel('Student-Testing Trip ID', fontweight='bold')
-    ax2.set_title('Topological Route Continuity Improvement with Viterbi Decoding', fontweight='bold')
+    ax2.set_xlabel('Evaluator-Testing Reserved Trip ID', fontweight='bold')
+    ax2.set_title('Evaluator-Testing Set: Topological Route Continuity with Viterbi Decoding', fontweight='bold')
     ax2.set_xticks(x)
     ax2.set_xticklabels(trips, fontweight='bold')
-    ax2.set_ylim(85, 103)
+    ax2.set_ylim(80, 103)
     ax2.legend(loc='lower right', frameon=True)
     ax2.grid(axis='y', linestyle='--', alpha=0.6)
     
@@ -236,17 +238,71 @@ def plot_hmm_comparison():
     print(f"Generated {out_path}")
 
 # -------------------------------------------------------------
-# 6. Map Visualisation Export (Matplotlib Render of Trajectory)
+# 6. Map Visualisation Export (Matplotlib Render of Evaluator Trajectory)
 # -------------------------------------------------------------
 def plot_folium_map_rendering():
-    # Load Trip 00000000 raw files to produce a publication map snapshot
-    trip_id = "00000000"
-    trip_dir = os.path.join(PROJECT_ROOT, "data", "student_test", trip_id)
+    # Load Trip 00000015 from evaluator_test
+    trip_id = "00000015"
+    trip_dir = os.path.join(PROJECT_ROOT, "data", "evaluator_test", trip_id)
+    if not os.path.exists(trip_dir):
+        trip_dir = os.path.join(PROJECT_ROOT, "data", "student_test", "00000000")
+        trip_id = "00000000"
     
     track_p = os.path.join(trip_dir, f"{trip_id}.track")
     nodes_p = os.path.join(trip_dir, f"{trip_id}.nodes")
     arcs_p  = os.path.join(trip_dir, f"{trip_id}.arcs")
     route_p = os.path.join(trip_dir, f"{trip_id}.route")
+    
+    with open(track_p) as f:
+        track = [tuple(map(float, line.strip().split())) for line in f if line.strip()]
+    with open(nodes_p) as f:
+        nodes = [tuple(map(float, line.strip().split())) for line in f if line.strip()]
+    with open(arcs_p) as f:
+        arcs = [tuple(map(int, line.strip().split())) for line in f if line.strip()]
+    with open(route_p) as f:
+        route = [int(line.strip()) for line in f if line.strip()]
+        
+    lons = [p[0] for p in track]
+    lats = [p[1] for p in track]
+    margin = 0.008
+    min_lon, max_lon = min(lons) - margin, max(lons) + margin
+    min_lat, max_lat = min(lats) - margin, max(lats) + margin
+    
+    fig, ax = plt.subplots(figsize=(10, 8), dpi=300)
+    
+    # 1. Background Road Network
+    road_drawn = 0
+    for u, v in arcs:
+        u_lon, u_lat = nodes[u]
+        v_lon, v_lat = nodes[v]
+        if min_lon <= u_lon <= max_lon and min_lat <= u_lat <= max_lat:
+            ax.plot([u_lon, v_lon], [u_lat, v_lat], color='#CBD5E1', linewidth=1.0, alpha=0.7, zorder=1)
+            road_drawn += 1
+            if road_drawn > 5000:
+                break
+                
+    # 2. Ground Truth Reference Route
+    for idx, arc_id in enumerate(route):
+        u, v = arcs[arc_id]
+        ax.plot([nodes[u][0], nodes[v][0]], [nodes[u][1], nodes[v][1]],
+                color='#10B981', linewidth=3.5, alpha=0.7, linestyle='--',
+                label='Ground Truth Reference Route' if idx == 0 else "", zorder=2)
+                
+    # 3. Raw GPS Trajectory (with noise)
+    ax.plot(lons, lats, color='#F59E0B', linewidth=1.2, alpha=0.6, label='Observed GPS Track (Noisy)', zorder=3)
+    ax.scatter(lons[::15], lats[::15], color='#D97706', s=16, alpha=0.8, edgecolors='none', label='Sampled GPS Points', zorder=4)
+    
+    # 4. Highlight Start and End
+    ax.scatter([lons[0]], [lats[0]], color='#2563EB', s=90, marker='o', edgecolors='black', linewidth=1.5, label='Trip Start', zorder=6)
+    ax.scatter([lons[-1]], [lats[-1]], color='#DC2626', s=90, marker='X', edgecolors='black', linewidth=1.5, label='Trip End', zorder=6)
+    
+    ax.set_title(f"PathSnap Map-Matching Reconstruction (Evaluator Trip {trip_id})\nRoad Network Topology, Noisy GPS Observations & Reference Path", fontweight='bold', pad=12)
+    ax.set_xlabel('Longitude (°E)', fontweight='bold')
+    ax.set_ylabel('Latitude (°N)', fontweight='bold')
+    ax.legend(loc='upper right', frameon=True, facecolor='white', framealpha=0.9)
+    ax.grid(True, linestyle=':', alpha=0.6)
+    
+    plt.tight_layout()
     
     with open(track_p) as f:
         track = [tuple(map(float, line.strip().split())) for line in f if line.strip()]

@@ -38,3 +38,52 @@
 2026-11-18 16:49:31,623 | INFO | (Laptop 1 API) Initializing PathSnap Backend on Laptop 1...
 2026-11-18 16:49:32,474 | INFO | (Laptop 1 API) Loaded model: RandomForest
 2026-11-18 16:49:32,475 | INFO | (Laptop 1 API) Loaded preprocessor and Viterbi HMM Decoder successfully.
+2026-11-18 16:55:35,364 | INFO | (Laptop 1 API) Initializing PathSnap Backend on Laptop 1...
+2026-11-18 16:55:36,250 | INFO | (Laptop 1 API) Loaded model: RandomForest
+2026-11-18 16:55:36,251 | INFO | (Laptop 1 API) Loaded preprocessor and Viterbi HMM Decoder successfully.
+2026-11-18 16:55:36,251 | INFO | (Laptop 1 API) PathSnap API online and ready for evaluator requests.
+2026-11-18 16:56:57,547 | INFO | (Laptop 1 API) Incoming map-matching request from 10.88.197.134 for Trip '00000023' (partition: evaluator_test, method: hmm_viterbi)
+2026-11-18 16:56:58,996 | INFO | (Laptop 1 API) Processed Trip '00000023' in 1449.3ms: Acc=96.51%, Continuity=100.00%
+2026-11-18 17:06:59,964 | INFO | (Laptop 1 API) Initializing PathSnap Backend on Laptop 1...
+2026-11-18 17:07:00,845 | INFO | (Laptop 1 API) Loaded model: RandomForest
+2026-11-18 17:07:00,845 | INFO | (Laptop 1 API) Loaded preprocessor and Viterbi HMM Decoder successfully.
+2026-11-18 17:07:00,845 | INFO | (Laptop 1 API) Incoming map-matching request from unknown for Trip '00000015' (partition: evaluator_test, method: hmm_viterbi)
+2026-11-18 17:07:07,365 | INFO | (Laptop 1 API) Processed Trip '00000015' in 6520.1ms: Acc=93.13%, Continuity=99.97%
+2026-11-18 17:07:07,382 | INFO | (Laptop 1 API) Incoming map-matching request from unknown for Trip '00000015' (partition: evaluator_test, method: top1)
+2026-11-18 17:07:12,559 | INFO | (Laptop 1 API) Processed Trip '00000015' in 5176.7ms: Acc=93.68%, Continuity=98.38%
+2026-11-18 17:07:12,578 | INFO | (Laptop 1 API) Incoming map-matching request from unknown for Trip '00000017' (partition: evaluator_test, method: hmm_viterbi)
+2026-11-18 17:07:14,547 | INFO | (Laptop 1 API) Processed Trip '00000017' in 1970.4ms: Acc=88.93%, Continuity=93.75%
+2026-11-18 17:07:14,557 | INFO | (Laptop 1 API) Incoming map-matching request from unknown for Trip '00000017' (partition: evaluator_test, method: top1)
+2026-11-18 17:07:15,994 | INFO | (Laptop 1 API) Processed Trip '00000017' in 1437.4ms: Acc=91.90%, Continuity=83.94%
+2026-11-18 17:07:16,004 | INFO | (Laptop 1 API) Incoming map-matching request from unknown for Trip '00000023' (partition: evaluator_test, method: hmm_viterbi)
+2026-11-18 17:07:16,640 | INFO | (Laptop 1 API) Processed Trip '00000023' in 637.0ms: Acc=96.51%, Continuity=100.00%
+2026-11-18 17:07:16,644 | INFO | (Laptop 1 API) Incoming map-matching request from unknown for Trip '00000023' (partition: evaluator_test, method: top1)
+2026-11-18 17:07:17,171 | INFO | (Laptop 1 API) Processed Trip '00000023' in 527.8ms: Acc=93.89%, Continuity=96.50%
+2026-11-18 17:07:17,190 | INFO | (Laptop 1 API) Incoming map-matching request from unknown for Trip '00000030' (partition: evaluator_test, method: hmm_viterbi)
+2026-11-18 17:07:18,319 | INFO | (Laptop 1 API) Processed Trip '00000030' in 1130.0ms: Acc=87.16%, Continuity=95.10%
+2026-11-18 17:07:18,324 | INFO | (Laptop 1 API) Incoming map-matching request from unknown for Trip '00000030' (partition: evaluator_test, method: top1)
+2026-11-18 17:07:19,038 | INFO | (Laptop 1 API) Processed Trip '00000030' in 715.6ms: Acc=86.54%, Continuity=84.53%
+2026-11-18 17:07:19,043 | INFO | (Laptop 1 API) Incoming map-matching request from unknown for Trip '00000049' (partition: evaluator_test, method: hmm_viterbi)
+2026-11-18 17:07:21,784 | INFO | (Laptop 1 API) Processed Trip '00000049' in 2741.3ms: Acc=98.86%, Continuity=99.81%
+2026-11-18 17:07:21,792 | INFO | (Laptop 1 API) Incoming map-matching request from unknown for Trip '00000049' (partition: evaluator_test, method: top1)
+2026-11-18 17:07:24,054 | INFO | (Laptop 1 API) Processed Trip '00000049' in 2262.4ms: Acc=98.33%, Continuity=98.49%
+2026-11-18 17:07:24,062 | INFO | (Laptop 1 API) Incoming map-matching request from unknown for Trip '00000059' (partition: evaluator_test, method: hmm_viterbi)
+2026-11-18 17:07:25,492 | INFO | (Laptop 1 API) Processed Trip '00000059' in 1430.4ms: Acc=92.43%, Continuity=96.60%
+2026-11-18 17:07:25,498 | INFO | (Laptop 1 API) Incoming map-matching request from unknown for Trip '00000059' (partition: evaluator_test, method: top1)
+2026-11-18 17:07:26,520 | INFO | (Laptop 1 API) Processed Trip '00000059' in 1023.2ms: Acc=95.73%, Continuity=90.00%
+2026-11-18 17:07:26,526 | INFO | (Laptop 1 API) Incoming map-matching request from unknown for Trip '00000067' (partition: evaluator_test, method: hmm_viterbi)
+2026-11-18 17:07:27,604 | INFO | (Laptop 1 API) Processed Trip '00000067' in 1077.2ms: Acc=95.96%, Continuity=100.00%
+2026-11-18 17:07:27,608 | INFO | (Laptop 1 API) Incoming map-matching request from unknown for Trip '00000067' (partition: evaluator_test, method: top1)
+2026-11-18 17:07:28,417 | INFO | (Laptop 1 API) Processed Trip '00000067' in 808.8ms: Acc=97.60%, Continuity=99.13%
+2026-11-18 17:07:28,420 | INFO | (Laptop 1 API) Incoming map-matching request from unknown for Trip '00000073' (partition: evaluator_test, method: hmm_viterbi)
+2026-11-18 17:07:30,038 | INFO | (Laptop 1 API) Processed Trip '00000073' in 1617.4ms: Acc=97.03%, Continuity=100.00%
+2026-11-18 17:07:30,042 | INFO | (Laptop 1 API) Incoming map-matching request from unknown for Trip '00000073' (partition: evaluator_test, method: top1)
+2026-11-18 17:07:31,159 | INFO | (Laptop 1 API) Processed Trip '00000073' in 1117.5ms: Acc=97.38%, Continuity=98.25%
+2026-11-18 17:07:31,165 | INFO | (Laptop 1 API) Incoming map-matching request from unknown for Trip '00000087' (partition: evaluator_test, method: hmm_viterbi)
+2026-11-18 17:07:33,050 | INFO | (Laptop 1 API) Processed Trip '00000087' in 1885.5ms: Acc=99.00%, Continuity=99.57%
+2026-11-18 17:07:33,057 | INFO | (Laptop 1 API) Incoming map-matching request from unknown for Trip '00000087' (partition: evaluator_test, method: top1)
+2026-11-18 17:07:34,468 | INFO | (Laptop 1 API) Processed Trip '00000087' in 1411.6ms: Acc=93.78%, Continuity=92.42%
+2026-11-18 17:07:34,477 | INFO | (Laptop 1 API) Incoming map-matching request from unknown for Trip '00000094' (partition: evaluator_test, method: hmm_viterbi)
+2026-11-18 17:07:37,904 | INFO | (Laptop 1 API) Processed Trip '00000094' in 3427.5ms: Acc=95.26%, Continuity=99.41%
+2026-11-18 17:07:37,915 | INFO | (Laptop 1 API) Incoming map-matching request from unknown for Trip '00000094' (partition: evaluator_test, method: top1)
+2026-11-18 17:07:40,600 | INFO | (Laptop 1 API) Processed Trip '00000094' in 2685.6ms: Acc=95.85%, Continuity=96.19%
