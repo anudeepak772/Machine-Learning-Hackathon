@@ -1,141 +1,527 @@
-"""
-PathSnap - Distributed Map-Matching Evaluator Interface (Laptop 2)
-PES University UE24CS352A - Machine Learning Hackathon
-Connects over LAN to Laptop 1 FastAPI backend, displays trip options,
-submits evaluation requests, and renders interactive maps and performance metrics.
-"""
 
-import streamlit as st
-import requests
-import folium
-from streamlit_folium import st_folium
 import json
-import time
+import os
 
-# Page Configuration
+import pandas as pd
+import requests
+import streamlit as st
+import streamlit.components.v1 as components
+
 st.set_page_config(
-    page_title="PathSnap | Distributed Map-Matching",
+    page_title="PathSnap",
     page_icon="🗺️",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="wide"
 )
 
-# Custom CSS for polished UI
-st.markdown("""
-<style>
-    .main-title {
-        font-size: 2.2rem;
-        font-weight: 700;
-        color: #1E3A8A;
-        margin-bottom: 0.2rem;
+API_BASE_URL = os.getenv(
+    "PATHSNAP_API_URL",
+    "http://localhost:8000"
+).rstrip("/")
+
+TIMEOUT = 180
+
+
+# ============================================================
+# API HELPERS
+# ============================================================
+
+def api_get(path: str):
+    response = requests.get(
+        f"{API_BASE_URL}{path}",
+        timeout=20
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def api_post(path: str, payload: dict):
+    response = requests.post(
+        f"{API_BASE_URL}{path}",
+        json=payload,
+        timeout=TIMEOUT
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def unwrap_list(data, key):
+    if isinstance(data, list):
+        return data
+
+    if isinstance(data, dict):
+        value = data.get(key, [])
+        return value if isinstance(value, list) else []
+
+    return []
+
+
+def normalise_id(item):
+    if isinstance(item, dict):
+        return str(
+            item.get(
+                "trajectory_id",
+                item.get("id", item.get("name", ""))
+            )
+        )
+
+    return str(item)
+
+
+def normalise_model(item):
+    if isinstance(item, dict):
+        slug = str(item.get("id", item.get("name", "")))
+
+        label = str(
+            item.get(
+                "label",
+                item.get("display_name", item.get("name", slug))
+            )
+        )
+
+        available = bool(item.get("available", True))
+
+        return {
+            "id": slug,
+            "label": label,
+            "available": available
+        }
+
+    value = str(item)
+
+    return {
+        "id": value,
+        "label": value.replace("_", " ").title(),
+        "available": True
     }
-    .sub-title {
-        font-size: 1.05rem;
-        color: #4B5563;
-        margin-bottom: 1.5rem;
-    }
-    .metric-card {
-        background-color: #F8FAFC;
-        border-radius: 8px;
-        padding: 15px;
-        border-left: 5px solid #2563EB;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-</style>
-""", unsafe_allow_html=True)
 
-# Sidebar Configuration
-st.sidebar.image("https://upload.wikimedia.org/wikipedia/en/thumb/8/87/PES_University_Bangalore_logo.svg/1200px-PES_University_Bangalore_logo.svg.png", width=160)
-st.sidebar.title("PathSnap Console")
-st.sidebar.markdown("**PES University — UE24CS352A**")
-st.sidebar.markdown("---")
 
-api_host = st.sidebar.text_input("Laptop 1 API Base URL", value="http://localhost:8000")
-partition_choice = st.sidebar.selectbox("Data Partition", ["student_test", "train"], index=0)
+# ============================================================
+# SESSION STATE
+# ============================================================
 
-st.sidebar.markdown("---")
-st.sidebar.markdown("### Evaluator Controls")
-st.sidebar.info("""
-1. Select Laptop 1 API IP & Port.
-2. Choose evaluation trip from dropdown.
-3. Click **Execute Map-Matching Pipeline**.
-4. Review reconstructed route and live accuracy.
-""")
+if "last_result" not in st.session_state:
+    st.session_state.last_result = None
 
-# Main Content
-st.markdown('<div class="main-title">PathSnap: Distributed Map-Matching & Route Reconstruction</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Two-Laptop Distributed Machine Learning & Viterbi HMM Inference Architecture</div>', unsafe_allow_html=True)
 
-# Fetch Trips from Backend
-trips_list = []
-backend_online = False
+# ============================================================
+# SIDEBAR
+# ============================================================
+
+st.title("🗺️ PathSnap")
+
+st.caption(
+    "GPS trajectory map matching and route reconstruction evaluation"
+)
+
+with st.sidebar:
+
+    st.subheader("Backend connection")
+
+    st.code(API_BASE_URL, language=None)
+
+    if st.button("Check API connection", use_container_width=True):
+
+        try:
+            health = api_get("/api/health")
+
+            if health.get("status") == "healthy":
+                st.success("API connected successfully.")
+            else:
+                st.warning(f"API response: {health}")
+
+        except requests.RequestException as exc:
+            st.error("Could not connect to FastAPI.")
+            st.exception(exc)
+
+    st.divider()
+
+    st.subheader("Map layers")
+
+    show_gps = st.checkbox("GPS trajectory", value=True)
+    show_predicted = st.checkbox("Predicted route", value=True)
+    show_reference = st.checkbox("Reference route", value=True)
+    show_road = st.checkbox("Road network", value=True)
+
+
+# ============================================================
+# LOAD TRAJECTORIES AND MODELS
+# ============================================================
 
 try:
-    health_resp = requests.get(f"{api_host}/", timeout=3)
-    if health_resp.status_code == 200:
-        backend_online = True
-        trips_resp = requests.get(f"{api_host}/trips?partition={partition_choice}", timeout=3)
-        if trips_resp.status_code == 200:
-            trips_list = trips_resp.json().get("trips", [])
-except Exception as e:
-    backend_online = False
 
-if not backend_online:
-    st.error(f"Cannot connect to Laptop 1 API at `{api_host}`. Please verify that the FastAPI backend is running on Laptop 1 (`uvicorn 06_api.main:app --host 0.0.0.0 --port 8000`).")
-    st.stop()
+    trajectory_payload = api_get("/api/trajectories")
 
-col_sel, col_btn = st.columns([3, 1])
-
-with col_sel:
-    selected_trip = st.selectbox(
-        f"Select Evaluation Trip ({len(trips_list)} available in {partition_choice}):",
-        trips_list,
-        index=0 if trips_list else None
+    trajectories = unwrap_list(
+        trajectory_payload,
+        "trajectories"
     )
 
-with col_btn:
-    st.write("")
-    st.write("")
-    run_btn = st.button("🚀 Reconstruct Route", type="primary", use_container_width=True)
+    model_payload = api_get("/api/models")
 
-# Processing when button is clicked
-if run_btn and selected_trip:
-    with st.spinner(f"Sending Trip {selected_trip} to Laptop 1 for ML + Viterbi reconstruction..."):
-        payload = {"trip_id": selected_trip, "partition": partition_choice}
+    models = [
+        normalise_model(item)
+        for item in unwrap_list(model_payload, "models")
+    ]
+
+except requests.RequestException as exc:
+
+    st.error(
+        "Could not load trajectories/models from the API. "
+        "Start FastAPI and check PATHSNAP_API_URL."
+    )
+
+    st.exception(exc)
+    st.stop()
+
+
+if not trajectories:
+
+    st.warning(
+        "The API returned no trajectories. "
+        "Check the backend dataset directory."
+    )
+
+    st.stop()
+
+
+trajectory_ids = [
+    normalise_id(item)
+    for item in trajectories
+]
+
+trajectory_ids = [
+    item for item in trajectory_ids if item
+]
+
+
+if not trajectory_ids:
+
+    st.error("Invalid trajectory response from API.")
+    st.stop()
+
+
+model_options = [
+    model for model in models
+    if model["available"]
+]
+
+
+if not model_options:
+
+    st.warning("No trained models are currently available.")
+    st.stop()
+
+
+# ============================================================
+# MAIN LAYOUT
+# ============================================================
+
+left, right = st.columns(
+    [1, 2],
+    gap="large"
+)
+
+
+# ============================================================
+# LEFT: CONFIGURATION
+# ============================================================
+
+with left:
+
+    st.subheader("Run map matching")
+
+    default_trip = (
+        "00000000"
+        if "00000000" in trajectory_ids
+        else trajectory_ids[0]
+    )
+
+    selected_trip = st.selectbox(
+        "Dataset trajectory",
+        trajectory_ids,
+        index=trajectory_ids.index(default_trip),
+        help="Select a pre-existing dataset trajectory."
+    )
+
+    model_labels = {
+        model["label"]: model["id"]
+        for model in model_options
+    }
+
+    default_model_index = next(
+        (
+            i for i, model in enumerate(model_options)
+            if model["id"] == "random_forest"
+        ),
+        0
+    )
+
+    selected_model_label = st.selectbox(
+        "Model",
+        list(model_labels.keys()),
+        index=default_model_index
+    )
+
+    selected_model = model_labels[selected_model_label]
+
+    reconstruction = st.selectbox(
+        "Route reconstruction",
+        options=["top1", "hmm_viterbi"],
+        format_func=lambda value: (
+            "Top-1 candidate (available)"
+            if value == "top1"
+            else "HMM + Viterbi (not implemented)"
+        ),
+        index=0
+    )
+
+    if reconstruction == "hmm_viterbi":
+
+        st.warning(
+            "HMM + Viterbi is not available yet. "
+            "Choose Top-1 candidate selection."
+        )
+
+    run_clicked = st.button(
+        "Run map matching",
+        type="primary",
+        use_container_width=True,
+        disabled=(reconstruction != "top1")
+    )
+
+    st.divider()
+
+    st.subheader("Model comparison")
+
+    st.caption(
+        "Model comparison will be enabled once the backend "
+        "supports the comparison endpoint and saves multiple models."
+    )
+
+    st.button(
+        "Compare available models",
+        use_container_width=True,
+        disabled=True
+    )
+
+
+# ============================================================
+# MAP MATCHING REQUEST
+# ============================================================
+
+if run_clicked:
+
+    request_body = {
+        "trip_id": selected_trip,
+        "partition": "student_test"
+    }
+
+    with st.spinner(
+        f"Running map matching for trajectory {selected_trip}..."
+    ):
+
         try:
-            t0 = time.time()
-            resp = requests.post(f"{api_host}/predict", json=payload, timeout=45)
-            client_roundtrip_ms = (time.time() - t0) * 1000.0
 
-            if resp.status_code == 200:
-                data = resp.json()
+            result = api_post(
+                "/api/map-match",
+                request_body
+            )
 
-                # Metric Cards
-                st.markdown("### Evaluation Results (Server-side Reference Evaluation)")
-                m1, m2, m3, m4 = st.columns(4)
+            st.session_state.last_result = result
 
-                m1.metric("Pointwise Accuracy", f"{data['pointwise_accuracy'] * 100.0:.2f}%")
-                m2.metric("Route Continuity", f"{data['route_continuity'] * 100.0:.2f}%")
-                m3.metric("Server Pipeline Time", f"{data['processing_time_ms']:.1f} ms")
-                m4.metric("GPS Points Matched", f"{data['num_gps_observations']}")
+            st.success("Map matching completed successfully.")
 
-                st.markdown("---")
-                st.markdown("### Interactive Geographical Route Visualization")
-                st.caption("Blue: Predicted Reconstructed Route | Green (Dashed): Reference Route | Orange: Raw GPS Points")
+        except requests.RequestException as exc:
 
-                # Render HTML Map returned by API
-                folium_html = data.get("folium_map_html", "")
-                if folium_html:
-                    st.components.v1.html(folium_html, height=580, scrolling=True)
+            st.error(
+                f"Map-matching request failed: {exc}"
+            )
 
-                # Route Details
-                with st.expander("Detailed Reconstructed Route Arc Sequence"):
-                    predicted_arcs = data.get("predicted_arcs", [])
-                    st.write(f"Total Traversed Arcs: {len(predicted_arcs)}")
-                    st.write(predicted_arcs)
+            if exc.response is not None:
+                try:
+                    st.error(
+                        f"Backend response: {exc.response.json()}"
+                    )
+                except ValueError:
+                    st.error(exc.response.text)
 
-            else:
-                st.error(f"API Error {resp.status_code}: {resp.text}")
+        except Exception as exc:
 
-        except Exception as err:
-            st.error(f"Failed to communicate with Laptop 1: {err}")
+            st.error(f"Unexpected error: {exc}")
+
+
+# ============================================================
+# RIGHT: MAP
+# ============================================================
+
+with right:
+
+    st.subheader("Trajectory map")
+
+    result = st.session_state.last_result
+
+    if result:
+
+        map_html = result.get("folium_map_html")
+
+        if map_html:
+
+            components.html(
+                map_html,
+                height=650,
+                scrolling=True
+            )
+
+        else:
+
+            st.warning(
+                "The API did not return a Folium map."
+            )
+
+    else:
+
+        st.info(
+            "Select a trajectory and run map matching. "
+            "The resulting map will appear here."
+        )
+
+
+# ============================================================
+# RESULTS
+# ============================================================
+
+result = st.session_state.last_result
+
+if result:
+
+    st.divider()
+
+    st.subheader("Prediction results")
+
+    # --------------------------------------------------------
+    # METRICS
+    # --------------------------------------------------------
+
+    accuracy = result.get("pointwise_accuracy")
+    continuity = result.get("route_continuity")
+    processing_time = result.get("processing_time_ms")
+
+    metric_columns = st.columns(4)
+
+    metric_columns[0].metric(
+        "GPS observations",
+        result.get("num_gps_observations", 0)
+    )
+
+    metric_columns[1].metric(
+        "Predicted observations",
+        result.get("num_predicted_observations", 0)
+    )
+
+    metric_columns[2].metric(
+        "Pointwise accuracy",
+        f"{accuracy:.4f}" if accuracy is not None else "N/A"
+    )
+
+    metric_columns[3].metric(
+        "Route continuity",
+        f"{continuity:.4f}" if continuity is not None else "N/A"
+    )
+
+    st.markdown("**Processing metrics**")
+
+    timing_df = pd.DataFrame([
+        {
+            "Processing time (ms)": processing_time,
+            "Predicted route length": result.get(
+                "predicted_route_length", 0
+            )
+        }
+    ])
+
+    st.dataframe(
+        timing_df,
+        use_container_width=True,
+        hide_index=True
+    )
+
+    # --------------------------------------------------------
+    # DETAILS
+    # --------------------------------------------------------
+
+    st.markdown("**Result details**")
+
+    details = {
+        "trajectory_id": result.get("trip_id"),
+        "partition": result.get("partition"),
+        "model": result.get("model_name"),
+        "reconstruction": "top1"
+    }
+
+    st.json(details, expanded=False)
+
+    # --------------------------------------------------------
+    # ROUTE INFORMATION
+    # --------------------------------------------------------
+
+    with st.expander("Predicted and reference arc IDs"):
+
+        predicted_arcs = result.get("predicted_arcs", [])
+        reference_arcs = result.get("reference_arcs", [])
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+
+            st.markdown("**Predicted route**")
+
+            st.write(predicted_arcs)
+
+        with col2:
+
+            st.markdown("**Reference route**")
+
+            st.write(reference_arcs)
+
+    # --------------------------------------------------------
+    # DOWNLOAD
+    # --------------------------------------------------------
+
+    st.download_button(
+        "Download result JSON",
+        data=json.dumps(
+            result,
+            indent=2,
+            default=str
+        ),
+        file_name=(
+            f"pathsnap_{result.get('trip_id', 'result')}_result.json"
+        ),
+        mime="application/json"
+    )
+
+
+# ============================================================
+# FOOTER / API INFORMATION
+# ============================================================
+
+with st.expander("Backend API information"):
+
+    st.markdown("""
+    **Currently supported endpoints**
+
+    | Endpoint | Purpose |
+    |---|---|
+    | `GET /api/health` | Backend health |
+    | `GET /api/trajectories` | Available trajectories |
+    | `GET /api/models` | Available trained models |
+    | `POST /api/map-match` | Run map matching |
+
+    **Current configuration**
+
+    - Model: Random Forest
+    - Reconstruction: Top-1 candidate selection
+    - Processing: Synchronous
+    - Evaluation: Reference route used after prediction
+    - Map: Folium interactive map
+    """)
