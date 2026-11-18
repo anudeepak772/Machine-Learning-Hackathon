@@ -1,0 +1,6 @@
+trial_number,value,state,duration_s,n_estimators,max_depth,min_samples_split,min_samples_leaf,max_features
+0,0.800993569353507,COMPLETE,663.7,140,24,8,6,sqrt
+1,0.8010438242641836,COMPLETE,1188.4,240,19,8,2,sqrt
+2,0.8017457602044107,COMPLETE,1739.4,100,12,4,5,
+3,0.8817571069069938,PRUNED,259.1,100,14,5,5,sqrt
+4,0.8817233737790677,PRUNED,1045.4,180,10,7,3,

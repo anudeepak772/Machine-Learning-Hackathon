@@ -1,0 +1,12 @@
+2026-11-18 15:41:36,466 [INFO] (Laptop 1 API) Initializing PathSnap Backend on Laptop 1...
+2026-11-18 15:41:37,473 [INFO] (Laptop 1 API) Fitted preprocessor successfully loaded.
+2026-11-18 15:41:37,626 [INFO] (Laptop 1 API) Model successfully loaded: RandomForest
+2026-11-18 15:41:37,626 [INFO] (Laptop 1 API) Viterbi HMM Decoder initialized and ready for requests.
+2026-11-18 15:41:37,627 [INFO] (Laptop 1 API) Incoming prediction request from unknown for Trip '00000056' (partition: student_test)
+2026-11-18 15:41:49,527 [INFO] (Laptop 1 API) Processed Trip '00000056': Acc=91.69%, Continuity=98.10%, Time=11899.9ms
+2026-11-18 15:44:07,162 [INFO] (Laptop 1 API) Initializing PathSnap Backend on Laptop 1...
+2026-11-18 15:44:08,144 [INFO] (Laptop 1 API) Fitted preprocessor successfully loaded.
+2026-11-18 15:44:08,303 [INFO] (Laptop 1 API) Model successfully loaded: RandomForest
+2026-11-18 15:44:08,303 [INFO] (Laptop 1 API) Viterbi HMM Decoder initialized and ready for requests.
+2026-11-18 15:44:08,303 [INFO] (Laptop 1 API) Incoming prediction request from unknown for Trip '00000056' (partition: student_test)
+2026-11-18 15:44:15,425 [INFO] (Laptop 1 API) Processed Trip '00000056': Acc=91.69%, Continuity=98.10%, Time=7121.7ms

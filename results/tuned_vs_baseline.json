@@ -1,0 +1,44 @@
+{
+  "baseline": {
+    "model_type": "RandomForest",
+    "top1_acc": 0.7126,
+    "continuity": 0.95,
+    "composite": 0.7838,
+    "macro_f1": 0.8633,
+    "binary_accuracy": 0.9529,
+    "log_loss": 0.121
+  },
+  "tuned": {
+    "model_type": "RandomForest",
+    "best_params": {
+      "n_estimators": 100,
+      "max_depth": 12,
+      "min_samples_split": 4,
+      "min_samples_leaf": 5,
+      "max_features": null,
+      "random_state": 42,
+      "n_jobs": -1
+    },
+    "top1_acc": 0.7127,
+    "continuity": 0.9509,
+    "composite": 0.7841,
+    "macro_f1": 0.8622,
+    "binary_accuracy": 0.9523,
+    "log_loss": 0.122
+  },
+  "delta": {
+    "top1_acc": 0.0001,
+    "continuity": 0.0008,
+    "composite": 0.0003,
+    "macro_f1": -0.0011,
+    "log_loss": 0.001
+  },
+  "optimization_info": {
+    "n_trials": 5,
+    "completed_trials": 3,
+    "pruned_trials": 2,
+    "best_cv_score": 0.80175,
+    "objective_type": "composite",
+    "winning_trial": 2
+  }
+}

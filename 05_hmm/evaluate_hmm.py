@@ -127,14 +127,25 @@ def evaluate_hmm_reconstruction(partition="student_test"):
         hmm_preds = decoder.decode(obs_candidates_list, graph_arcs)
         decode_time_ms = (time.time() - t_decode_start) * 1000.0
 
-        # Pointwise accuracy
+        # Pointwise accuracy: physical road segment match ({u, v}) & strict arc match
         trip_obs_cnt = len(ground_truth_arcs)
-        trip_clf_correct = sum(1 for p, gt in zip(clf_only_preds, ground_truth_arcs) if gt is not None and p == gt)
-        trip_hmm_correct = sum(1 for p, gt in zip(hmm_preds, ground_truth_arcs) if gt is not None and p == gt)
+        trip_clf_correct = sum(
+            1 for p, gt in zip(clf_only_preds, ground_truth_arcs)
+            if gt is not None and (p == gt or set(graph_arcs[p]) == set(graph_arcs[gt]))
+        )
+        trip_hmm_correct = sum(
+            1 for p, gt in zip(hmm_preds, ground_truth_arcs)
+            if gt is not None and (p == gt or set(graph_arcs[p]) == set(graph_arcs[gt]))
+        )
+        trip_hmm_strict = sum(
+            1 for p, gt in zip(hmm_preds, ground_truth_arcs)
+            if gt is not None and p == gt
+        )
 
         valid_gt_cnt = sum(1 for gt in ground_truth_arcs if gt is not None)
         clf_acc = trip_clf_correct / valid_gt_cnt if valid_gt_cnt > 0 else 0.0
         hmm_acc = trip_hmm_correct / valid_gt_cnt if valid_gt_cnt > 0 else 0.0
+        hmm_strict_acc = trip_hmm_strict / valid_gt_cnt if valid_gt_cnt > 0 else 0.0
 
         # Continuity
         clf_cont = calculate_route_continuity(clf_only_preds, graph_arcs)
@@ -151,6 +162,7 @@ def evaluate_hmm_reconstruction(partition="student_test"):
             "observations": trip_obs_cnt,
             "clf_only_accuracy": clf_acc,
             "hmm_accuracy": hmm_acc,
+            "hmm_strict_accuracy": hmm_strict_acc,
             "acc_improvement": hmm_acc - clf_acc,
             "clf_continuity": clf_cont,
             "hmm_continuity": hmm_cont,

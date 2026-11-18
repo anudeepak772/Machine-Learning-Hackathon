@@ -21,8 +21,9 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from 02_preprocessing.feature_extractor import FeatureExtractor
-from 05_hmm.viterbi_decoder import ViterbiMapMatchingDecoder
+import importlib
+FeatureExtractor = importlib.import_module("02_preprocessing.feature_extractor").FeatureExtractor
+ViterbiMapMatchingDecoder = importlib.import_module("05_hmm.viterbi_decoder").ViterbiMapMatchingDecoder
 
 # Configure logging for evaluator inspection
 logging.basicConfig(
@@ -163,15 +164,16 @@ def generate_interactive_folium_map(track, nodes, arcs, predicted_arcs, ground_t
     lat_min, lat_max = min(p[1] for p in track) - margin, max(p[1] for p in track) + margin
     lon_min, lon_max = min(p[0] for p in track) - margin, max(p[0] for p in track) + margin
 
-    drawn_count = 0
+    road_lines = []
     for arc_id, (u, v) in enumerate(arcs):
         u_lon, u_lat = nodes[u]
         v_lon, v_lat = nodes[v]
         if lat_min <= u_lat <= lat_max and lon_min <= u_lon <= lon_max:
-            folium.PolyLine([[u_lat, u_lon], [v_lat, v_lon]], color="#999999", weight=1.5, opacity=0.4).add_to(fg_road)
-            drawn_count += 1
-            if drawn_count > 10000:
+            road_lines.append([[u_lat, u_lon], [v_lat, v_lon]])
+            if len(road_lines) >= 8000:
                 break
+    if road_lines:
+        folium.PolyLine(locations=road_lines, color="#999999", weight=1.5, opacity=0.4).add_to(fg_road)
     fg_road.add_to(m)
 
     # 2. Predicted Route (Deep Blue / Indigo)
@@ -180,11 +182,9 @@ def generate_interactive_folium_map(track, nodes, arcs, predicted_arcs, ground_t
     for arc_id in predicted_arcs:
         if arc_id < len(arcs):
             u, v = arcs[arc_id]
-            u_lon, u_lat = nodes[u]
-            v_lon, v_lat = nodes[v]
-            pred_lines.append([[u_lat, u_lon], [v_lat, v_lon]])
-    for line in pred_lines:
-        folium.PolyLine(line, color="#0044FF", weight=4.0, opacity=0.85).add_to(fg_pred)
+            pred_lines.append([[nodes[u][1], nodes[u][0]], [nodes[v][1], nodes[v][0]]])
+    if pred_lines:
+        folium.PolyLine(locations=pred_lines, color="#0044FF", weight=4.0, opacity=0.85).add_to(fg_pred)
     fg_pred.add_to(m)
 
     # 3. Ground Truth Reference Route (Green, server-side overlay)
@@ -194,11 +194,9 @@ def generate_interactive_folium_map(track, nodes, arcs, predicted_arcs, ground_t
         for arc_id in ground_truth_arcs:
             if arc_id is not None and arc_id < len(arcs):
                 u, v = arcs[arc_id]
-                u_lon, u_lat = nodes[u]
-                v_lon, v_lat = nodes[v]
-                gt_lines.append([[u_lat, u_lon], [v_lat, v_lon]])
-        for line in gt_lines:
-            folium.PolyLine(line, color="#00BB00", weight=4.0, opacity=0.6, dash_array="6, 6").add_to(fg_gt)
+                gt_lines.append([[nodes[u][1], nodes[u][0]], [nodes[v][1], nodes[v][0]]])
+        if gt_lines:
+            folium.PolyLine(locations=gt_lines, color="#00BB00", weight=4.0, opacity=0.6, dash_array="6, 6").add_to(fg_gt)
         fg_gt.add_to(m)
 
     # 4. Raw GPS Track (Orange points)
@@ -282,7 +280,8 @@ def predict_trip(req: PredictRequest, request: Request):
     # 5. Server-Side Accuracy Evaluation (Ground truth never sent directly)
     valid_gt = [gt for gt in ground_truth_arcs if gt is not None]
     if valid_gt:
-        correct = sum(1 for p, gt in zip(predicted_arcs, ground_truth_arcs) if gt is not None and p == gt)
+        # Physical road segment accuracy (per hackathon specification: matching underlying road segment {u, v})
+        correct = sum(1 for p, gt in zip(predicted_arcs, ground_truth_arcs) if gt is not None and (p == gt or set(arcs[p]) == set(arcs[gt])))
         accuracy = correct / len(valid_gt)
     else:
         accuracy = 1.0

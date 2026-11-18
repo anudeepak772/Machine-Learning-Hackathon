@@ -55,7 +55,8 @@ def project_point_to_segment(px, py, ax, ay, bx, by, cos_lat):
 
 def match_gps_to_route_ground_truth(track, nodes, arcs, route):
     """
-    Monotonically maps each GPS point in track to its true arc in ground truth route.
+    Robustly maps each GPS point in track to its true arc in ground truth route.
+    Handles looping trajectories, repeated arcs, and stops without window desynchronization.
     Returns: list of true_arc_ids, one per GPS point.
     """
     if not route:
@@ -70,9 +71,9 @@ def match_gps_to_route_ground_truth(track, nodes, arcs, route):
     for i, p in enumerate(track):
         px, py = p[0], p[1]
         
-        # Search window in route: look around current position [current - 2, current + 15]
-        start_w = max(0, current_route_idx - 2)
-        end_w = min(num_route, current_route_idx + 25)
+        # Adaptive forward-progress window [current - 5, current + 60]
+        start_w = max(0, current_route_idx - 5)
+        end_w = min(num_route, current_route_idx + 60)
         
         best_d = 1e9
         best_idx = current_route_idx
@@ -87,6 +88,18 @@ def match_gps_to_route_ground_truth(track, nodes, arcs, route):
                 best_d = d
                 best_idx = r_i
                 
+        # Fallback to full route if the window drifted or GPS jump occurred
+        if best_d > 45.0:
+            for r_i in range(num_route):
+                arc_id = route[r_i]
+                u, v = arcs[arc_id]
+                ax, ay = nodes[u]
+                bx, by = nodes[v]
+                d, _, _, _, _ = project_point_to_segment(px, py, ax, ay, bx, by, cos_lat)
+                if d < best_d:
+                    best_d = d
+                    best_idx = r_i
+                    
         current_route_idx = best_idx
         true_arc_ids.append(route[best_idx])
         
