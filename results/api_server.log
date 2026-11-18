@@ -17,3 +17,24 @@
 2026-11-18 16:19:22,266 | INFO | (Laptop 1 API) Processed Trip '00000056' in 4448.0ms: Acc=91.38%, Continuity=98.10%
 2026-11-18 16:19:22,278 | INFO | (Laptop 1 API) Incoming map-matching request from unknown for Trip '00000056' (partition: student_test, method: top1)
 2026-11-18 16:19:25,643 | INFO | (Laptop 1 API) Processed Trip '00000056' in 3364.6ms: Acc=89.21%, Continuity=91.15%
+2026-11-18 16:25:25,867 | INFO | (Laptop 1 API) Initializing PathSnap Backend on Laptop 1...
+2026-11-18 16:25:26,805 | INFO | (Laptop 1 API) Loaded model: RandomForest
+2026-11-18 16:25:26,806 | INFO | (Laptop 1 API) Loaded preprocessor and Viterbi HMM Decoder successfully.
+2026-11-18 16:25:26,806 | INFO | (Laptop 1 API) PathSnap API online and ready for evaluator requests.
+2026-11-18 16:30:59,144 | INFO | (Laptop 1 API) Incoming map-matching request from 10.88.197.134 for Trip '00000000' (partition: student_test, method: hmm_viterbi)
+2026-11-18 16:31:04,627 | INFO | (Laptop 1 API) Processed Trip '00000000' in 5483.4ms: Acc=95.49%, Continuity=99.88%
+2026-11-18 16:32:01,901 | INFO | (Laptop 1 API) Incoming map-matching request from 10.88.197.134 for Trip '00000000' (partition: student_test, method: top1)
+2026-11-18 16:32:06,921 | INFO | (Laptop 1 API) Processed Trip '00000000' in 5020.0ms: Acc=94.53%, Continuity=97.84%
+2026-11-18 16:32:14,182 | INFO | (Laptop 1 API) Incoming map-matching request from 10.88.197.134 for Trip '00000000' (partition: student_test, method: hmm_viterbi)
+2026-11-18 16:32:19,459 | INFO | (Laptop 1 API) Processed Trip '00000000' in 5278.0ms: Acc=95.49%, Continuity=99.88%
+2026-11-18 16:46:02,850 | INFO | (Laptop 1 API) Initializing PathSnap Backend on Laptop 1...
+2026-11-18 16:46:03,716 | INFO | (Laptop 1 API) Loaded model: RandomForest
+2026-11-18 16:46:03,716 | INFO | (Laptop 1 API) Loaded preprocessor and Viterbi HMM Decoder successfully.
+2026-11-18 16:46:03,717 | INFO | (Laptop 1 API) Incoming map-matching request from unknown for Trip '00000015' (partition: evaluator_test, method: hmm_viterbi)
+2026-11-18 16:46:10,324 | INFO | (Laptop 1 API) Processed Trip '00000015' in 6607.0ms: Acc=93.13%, Continuity=99.97%
+2026-11-18 16:49:16,080 | INFO | (Laptop 1 API) Initializing PathSnap Backend on Laptop 1...
+2026-11-18 16:49:16,930 | INFO | (Laptop 1 API) Loaded model: RandomForest
+2026-11-18 16:49:16,930 | INFO | (Laptop 1 API) Loaded preprocessor and Viterbi HMM Decoder successfully.
+2026-11-18 16:49:31,623 | INFO | (Laptop 1 API) Initializing PathSnap Backend on Laptop 1...
+2026-11-18 16:49:32,474 | INFO | (Laptop 1 API) Loaded model: RandomForest
+2026-11-18 16:49:32,475 | INFO | (Laptop 1 API) Loaded preprocessor and Viterbi HMM Decoder successfully.

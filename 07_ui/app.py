@@ -140,6 +140,16 @@ with st.sidebar:
 
     st.divider()
 
+    st.subheader("Data Partition")
+    partition_choice = st.selectbox(
+        "Select Partition",
+        ["evaluator_test", "student_test", "train"],
+        index=0,
+        help="Evaluator reserved test set or student testing partition"
+    )
+
+    st.divider()
+
     st.subheader("Map layers")
 
     show_gps = st.checkbox("GPS trajectory", value=True)
@@ -154,7 +164,7 @@ with st.sidebar:
 
 try:
 
-    trajectory_payload = api_get("/api/trajectories")
+    trajectory_payload = api_get(f"/api/trajectories?partition={partition_choice}")
 
     trajectories = unwrap_list(
         trajectory_payload,
@@ -235,17 +245,11 @@ with left:
 
     st.subheader("Run map matching")
 
-    default_trip = (
-        "00000000"
-        if "00000000" in trajectory_ids
-        else trajectory_ids[0]
-    )
-
     selected_trip = st.selectbox(
-        "Dataset trajectory",
+        f"Dataset trajectory ({len(trajectory_ids)} available in {partition_choice})",
         trajectory_ids,
-        index=trajectory_ids.index(default_trip),
-        help="Select a pre-existing dataset trajectory."
+        index=0 if trajectory_ids else None,
+        help="Select a trajectory for map matching."
     )
 
     model_labels = {
@@ -310,7 +314,7 @@ if run_clicked:
 
     request_body = {
         "trip_id": selected_trip,
-        "partition": "student_test",
+        "partition": partition_choice,
         "reconstruction": reconstruction
     }
 
@@ -453,7 +457,7 @@ if result:
         "trajectory_id": result.get("trip_id"),
         "partition": result.get("partition"),
         "model": result.get("model_name"),
-        "reconstruction": "top1"
+        "reconstruction": reconstruction
     }
 
     st.json(details, expanded=False)

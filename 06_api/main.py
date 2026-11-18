@@ -229,6 +229,14 @@ def validate_trip_id(trip_id: str) -> str:
 def get_trip_directory(partition: str, trip_id: str) -> Path:
     trip_dir = DATA_DIR / partition / trip_id
     if not trip_dir.exists() or not trip_dir.is_dir():
+        fallbacks = [
+            Path(r"C:\Users\Anirudha\Downloads\evaluator_test\evaluator_test") / trip_id,
+            Path(r"C:\Users\Anirudha\Downloads\evaluator_test") / trip_id,
+            Path(r"C:\Users\Anirudha\Downloads\Student folder\Student folder") / partition / trip_id
+        ]
+        for fb in fallbacks:
+            if fb.exists() and fb.is_dir():
+                return fb
         raise HTTPException(
             status_code=404,
             detail=f"Trajectory '{trip_id}' not found in partition '{partition}'."
@@ -465,13 +473,24 @@ def get_models():
 
 @app.get("/api/trajectories")
 @app.get("/trips")
-def get_trajectories(partition: str = Query(default="student_test")):
+def get_trajectories(partition: str = "evaluator_test"):
     partition_dir = DATA_DIR / partition
     if not partition_dir.exists() or not partition_dir.is_dir():
-        raise HTTPException(
-            status_code=404,
-            detail=f"Partition folder '{partition}' not found in data directory."
-        )
+        fallbacks = [
+            Path(r"C:\Users\Anirudha\Downloads\evaluator_test\evaluator_test"),
+            Path(r"C:\Users\Anirudha\Downloads\evaluator_test")
+        ]
+        found = False
+        for fb in fallbacks:
+            if fb.exists() and fb.is_dir():
+                partition_dir = fb
+                found = True
+                break
+        if not found:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Partition folder '{partition}' not found in data directory."
+            )
 
     trips = sorted([d.name for d in partition_dir.iterdir() if d.is_dir() and not d.name.startswith(".")])
     return {
