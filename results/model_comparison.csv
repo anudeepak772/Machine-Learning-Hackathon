@@ -1,0 +1,6 @@
+Model Name,Algorithm Family,Key Configuration,CV Macro F1,CV Top-1 Acc,CV Route Continuity,Student-Test Accuracy,Student-Test Macro F1,Student-Test Top-1 Acc,Student-Test Continuity,Student-Test Precision,Student-Test Recall,Log Loss,CV Training Time (s),Inference Time (ms/1k)
+Logistic Regression,Linear & Probabilistic,"C=1.0, max_iter=1000, L2 penalty",0.8816,0.7357,0.9324,0.9483,0.8502,0.7054,0.9472,0.8337,0.869,0.1343,32.1,0.26
+Decision Tree,Tree-based,"max_depth=12, min_samples_leaf=10",0.8811,0.7395,0.933,0.9518,0.8622,0.7107,0.9479,0.8413,0.8868,0.1344,128.1,0.42
+Random Forest,Ensemble (Bagging),"n_estimators=100, max_depth=15, min_samples_leaf=5",0.8872,0.7423,0.9398,0.9529,0.8633,0.7126,0.95,0.8467,0.882,0.121,441.3,3.5
+HistGradientBoosting,Boosting,"max_iter=100, max_depth=8, lr=0.1",0.8961,0.7426,0.9377,0.9518,0.8615,0.7113,0.9493,0.842,0.8841,0.1228,49.8,5.94
+K-Nearest Neighbors,Instance-based,"k=7, weights=distance, metric=euclidean",0.8723,0.1118,0.4235,0.9475,0.8471,0.1677,0.4995,0.8277,0.8698,0.699,33.6,349.34

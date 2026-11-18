@@ -1,0 +1,25 @@
+# Virtual environment (NEVER commit this)
+.venv/
+venv/
+env/
+ENV/
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Large binary feature datasets (exceeds GitHub 100MB limit)
+data/*.pkl
+data/*.parquet
+
+# OS specific files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
