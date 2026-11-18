@@ -1,0 +1,11 @@
+{
+  "sigma_z": 8.0,
+  "beta": 12.0,
+  "same_arc_prob": 0.88,
+  "direct_conn_prob": 1.0,
+  "gap_threshold_s": 5.0,
+  "overall_clf_acc": 0.9248576056853216,
+  "overall_hmm_acc": 0.9365104248314783,
+  "overall_clf_continuity": 0.9462584084752563,
+  "overall_hmm_continuity": 0.9922392839890939
+}

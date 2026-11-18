@@ -117,7 +117,12 @@ with st.sidebar:
 
     st.subheader("Backend connection")
 
-    st.code(API_BASE_URL, language=None)
+    api_url_input = st.text_input(
+        "Laptop 1 API Base URL",
+        value=API_BASE_URL,
+        help="Enter the IP address of Laptop 1 (e.g. http://192.168.1.5:8000 or http://localhost:8000)"
+    )
+    API_BASE_URL = api_url_input.rstrip("/")
 
     if st.button("Check API connection", use_container_width=True):
 
@@ -266,27 +271,19 @@ with left:
 
     reconstruction = st.selectbox(
         "Route reconstruction",
-        options=["top1", "hmm_viterbi"],
+        options=["hmm_viterbi", "top1"],
         format_func=lambda value: (
-            "Top-1 candidate (available)"
-            if value == "top1"
-            else "HMM + Viterbi (not implemented)"
+            "HMM + Viterbi Decoder (Recommended: >93% Acc)"
+            if value == "hmm_viterbi"
+            else "Top-1 Candidate Selection (Baseline)"
         ),
         index=0
     )
 
-    if reconstruction == "hmm_viterbi":
-
-        st.warning(
-            "HMM + Viterbi is not available yet. "
-            "Choose Top-1 candidate selection."
-        )
-
     run_clicked = st.button(
         "Run map matching",
         type="primary",
-        use_container_width=True,
-        disabled=(reconstruction != "top1")
+        use_container_width=True
     )
 
     st.divider()
@@ -313,7 +310,8 @@ if run_clicked:
 
     request_body = {
         "trip_id": selected_trip,
-        "partition": "student_test"
+        "partition": "student_test",
+        "reconstruction": reconstruction
     }
 
     with st.spinner(
@@ -420,12 +418,12 @@ if result:
 
     metric_columns[2].metric(
         "Pointwise accuracy",
-        f"{accuracy:.4f}" if accuracy is not None else "N/A"
+        f"{accuracy * 100:.2f}%" if accuracy is not None else "N/A"
     )
 
     metric_columns[3].metric(
         "Route continuity",
-        f"{continuity:.4f}" if continuity is not None else "N/A"
+        f"{continuity * 100:.2f}%" if continuity is not None else "N/A"
     )
 
     st.markdown("**Processing metrics**")
