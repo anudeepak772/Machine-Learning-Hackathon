@@ -19,5 +19,4 @@ seaborn
 joblib
 pypdf
 requests
-
 reportlab
