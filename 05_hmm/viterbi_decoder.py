@@ -70,17 +70,7 @@ class ViterbiMapMatchingDecoder:
 
         return float('inf')
 
-    def compute_log_emission(self, classifier_prob, perp_dist_m):
-        """
-        Combines machine learning classifier probability and spatial distance prior.
-        """
-        # Blend classifier confidence (70%) with geometric spatial emission (30%)
-        spatial_log = -0.5 * (perp_dist_m / self.sigma_z)**2
-        # Clamp classifier prob
-        clf_p = max(1e-6, min(1.0 - 1e-6, classifier_prob))
-        clf_log = math.log(clf_p)
-        
-        return 0.65 * clf_log + 0.35 * spatial_log
+
 
     def compute_log_transition(self, from_arc, to_arc, arcs, node_outgoing, dt_s, d_gps_m):
         """
