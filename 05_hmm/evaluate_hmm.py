@@ -57,6 +57,118 @@ def calculate_route_continuity(predicted_arcs, graph_arcs):
                 connected += 1
     return connected / total if total > 0 else 0.0
 
+def evaluate_hmm_reconstruction(partition="student_test"):
+    print("=" * 70)
+    print(f"HMM / VITERBI EVALUATION & COMPARISON ({partition.upper()})")
+    print("=" * 70)
+
+    # Load Model & Preprocessor
+    model_path = os.path.join(ARTIFACTS_DIR, "final_model.pkl")
+    if not os.path.exists(model_path):
+        model_path = os.path.join(ARTIFACTS_DIR, "baseline_best_model.pkl")
+        with open(model_path, "rb") as f:
+            clf = pickle.load(f)
+    else:
+        with open(model_path, "rb") as f:
+            saved_data = pickle.load(f)
+            clf = saved_data["model"]
+
+    with open(os.path.join(ARTIFACTS_DIR, "preprocessor.pkl"), "rb") as f:
+        prep_data = pickle.load(f)
+    scaler = prep_data["scaler"]
+
+    # Load partition features
+    feat_file = f"{partition}_features.pkl"
+    df = pd.read_pickle(os.path.join(DATA_DIR, feat_file))
+
+    # Predict candidate probabilities
+    X = scaler.transform(df[FEATURE_COLUMNS])
+    df['clf_prob'] = clf.predict_proba(X)[:, 1]
+
+    decoder = ViterbiMapMatchingDecoder(sigma_z=8.0, same_arc_prob=0.88, direct_conn_prob=1.0)
+
+    comparison_results = []
+    total_obs = 0
+    clf_only_correct = 0
+    hmm_correct = 0
+
+    all_clf_continuity = []
+    all_hmm_continuity = []
+
+    trip_ids = df['trip_id'].unique()
+
+    for trip_id in trip_ids:
+        trip_df = df[df['trip_id'] == trip_id]
+        graph_arcs = load_trip_graph_arcs(trip_id, partition)
+
+        # Structure observations
+        obs_groups = trip_df.groupby('obs_idx')
+        obs_candidates_list = []
+        ground_truth_arcs = []
+        clf_only_preds = []
+
+        for obs_idx, obs_cands in obs_groups:
+            cands_records = obs_cands.to_dict('records')
+            obs_candidates_list.append(cands_records)
+
+            # Ground truth for this observation
+            gt_row = obs_cands[obs_cands['label'] == 1]
+            if len(gt_row) > 0:
+                ground_truth_arcs.append(gt_row.iloc[0]['arc_id'])
+            else:
+                ground_truth_arcs.append(None)
+
+            # Classifier-only prediction: argmax of clf_prob
+            best_cand = max(cands_records, key=lambda c: c['clf_prob'])
+            clf_only_preds.append(best_cand['arc_id'])
+
+        # Viterbi decoding
+        t_decode_start = time.time()
+        hmm_preds = decoder.decode(obs_candidates_list, graph_arcs)
+        decode_time_ms = (time.time() - t_decode_start) * 1000.0
+
+        # Pointwise accuracy: physical road segment match ({u, v}) & strict arc match
+        trip_obs_cnt = len(ground_truth_arcs)
+        trip_clf_correct = sum(
+            1 for p, gt in zip(clf_only_preds, ground_truth_arcs)
+            if gt is not None and (p == gt or set(graph_arcs[p]) == set(graph_arcs[gt]))
+        )
+        trip_hmm_correct = sum(
+            1 for p, gt in zip(hmm_preds, ground_truth_arcs)
+            if gt is not None and (p == gt or set(graph_arcs[p]) == set(graph_arcs[gt]))
+        )
+        trip_hmm_strict = sum(
+            1 for p, gt in zip(hmm_preds, ground_truth_arcs)
+            if gt is not None and p == gt
+        )
+
+        valid_gt_cnt = sum(1 for gt in ground_truth_arcs if gt is not None)
+        clf_acc = trip_clf_correct / valid_gt_cnt if valid_gt_cnt > 0 else 0.0
+        hmm_acc = trip_hmm_correct / valid_gt_cnt if valid_gt_cnt > 0 else 0.0
+        hmm_strict_acc = trip_hmm_strict / valid_gt_cnt if valid_gt_cnt > 0 else 0.0
+
+        # Continuity
+        clf_cont = calculate_route_continuity(clf_only_preds, graph_arcs)
+        hmm_cont = calculate_route_continuity(hmm_preds, graph_arcs)
+
+        total_obs += valid_gt_cnt
+        clf_only_correct += trip_clf_correct
+        hmm_correct += trip_hmm_correct
+        all_clf_continuity.append(clf_cont)
+        all_hmm_continuity.append(hmm_cont)
+
+        comparison_results.append({
+            "trip_id": trip_id,
+            "observations": trip_obs_cnt,
+            "clf_only_accuracy": clf_acc,
+            "hmm_accuracy": hmm_acc,
+            "hmm_strict_accuracy": hmm_strict_acc,
+            "acc_improvement": hmm_acc - clf_acc,
+            "clf_continuity": clf_cont,
+            "hmm_continuity": hmm_cont,
+            "continuity_improvement": hmm_cont - clf_cont,
+            "decode_time_ms": decode_time_ms
+        })
 
     overall_clf_acc = clf_only_correct / total_obs if total_obs > 0 else 0.0
     overall_hmm_acc = hmm_correct / total_obs if total_obs > 0 else 0.0
